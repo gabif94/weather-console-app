@@ -1,6 +1,11 @@
+const fs = require('fs');
 const axios = require('axios');
 
+
 class Busquedas {
+
+	historial = []
+	dbPath = './db/database.json'
 	constructor() {}
 
 	get paramsMapbox() {
@@ -56,6 +61,22 @@ class Busquedas {
 		} catch (error) {
 			console.log(error)
 		}
+	}
+
+	agregarHistorial(lugar = '') {
+		if(this.historial.includes(lugar.toLowerCase())) return
+
+		this.historial.unshift(lugar.toLowerCase())
+
+		this.guardarEnDB()
+	}
+
+	guardarEnDB() {
+		const payload = {
+			historial: this.historial
+		}
+		fs.writeFileSync(this.dbPath, JSON.stringify(payload))
+
 	}
 }
 
