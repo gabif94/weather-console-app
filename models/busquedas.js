@@ -1,12 +1,21 @@
 const fs = require('fs');
 const axios = require('axios');
 
-
 class Busquedas {
+	historial = [];
+	dbPath = './db/database.json';
+	constructor() {
+		this.leerDB();
+	}
 
-	historial = []
-	dbPath = './db/database.json'
-	constructor() {}
+	get HistorialCapitalizado() {
+		return this.historial.map(lugar => {
+			let palabras = lugar.split(' ');
+			palabras = palabras.map(p => p[0].toUpperCase() + p.substring(1));
+
+			return palabras.join(' ');
+		});
+	}
 
 	get paramsMapbox() {
 		return {
@@ -20,8 +29,8 @@ class Busquedas {
 		return {
 			appid: process.env.OPENWEATHER_KEY,
 			units: 'metric',
-			lang: 'es'
-		}
+			lang: 'es',
+		};
 	}
 
 	async ciudad(lugar = '') {
@@ -46,37 +55,46 @@ class Busquedas {
 		try {
 			const instance = axios.create({
 				baseURL: `https://api.openweathermap.org/data/2.5/weather`,
-				params: {...this.paramsWeatherApp, lat, lon}
-			})
-			const resp = await instance.get()
-			const { weather, main } = resp.data
-			
+				params: {...this.paramsWeatherApp, lat, lon},
+			});
+			const resp = await instance.get();
+			const {weather, main} = resp.data;
+
 			return {
 				descripcion: weather[0].description,
 				min: main.temp_min,
 				max: main.temp_max,
-				temp: main.temp
-			}
-			
+				temp: main.temp,
+			};
 		} catch (error) {
-			console.log(error)
+			console.log(error);
 		}
 	}
 
 	agregarHistorial(lugar = '') {
-		if(this.historial.includes(lugar.toLowerCase())) return
+		if (this.historial.includes(lugar.toLowerCase())) return;
 
-		this.historial.unshift(lugar.toLowerCase())
+		this.historial = this.historial.splice(0, 5);
 
-		this.guardarEnDB()
+		this.historial.unshift(lugar.toLowerCase());
+
+		this.guardarEnDB();
 	}
 
 	guardarEnDB() {
 		const payload = {
-			historial: this.historial
-		}
-		fs.writeFileSync(this.dbPath, JSON.stringify(payload))
+			historial: this.historial,
+		};
+		fs.writeFileSync(this.dbPath, JSON.stringify(payload));
+	}
 
+	leerDB() {
+		if (!fs.existsSync(this.dbPath)) return;
+
+		const info = fs.readFileSync(this.dbPath, {encoding: 'utf-8'});
+		const data = JSON.parse(info);
+
+		this.historial = data.historial;
 	}
 }
 
